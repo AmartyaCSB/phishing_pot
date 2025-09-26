@@ -1,0 +1,197 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Create documentation site
+        run: |
+          mkdir -p docs
+          
+          # Create index.html for GitHub Pages
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Email Classification API - Documentation</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                      line-height: 1.6;
+                      max-width: 1200px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      min-height: 100vh;
+                  }
+                  .container {
+                      background: white;
+                      border-radius: 15px;
+                      padding: 40px;
+                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                  }
+                  h1 { color: #2d3748; border-bottom: 3px solid #667eea; padding-bottom: 10px; }
+                  h2 { color: #4a5568; margin-top: 30px; }
+                  .feature { 
+                      background: #f7fafc; 
+                      padding: 20px; 
+                      border-radius: 10px; 
+                      margin: 15px 0;
+                      border-left: 4px solid #667eea;
+                  }
+                  .endpoint {
+                      background: #edf2f7;
+                      padding: 15px;
+                      border-radius: 8px;
+                      margin: 10px 0;
+                      font-family: 'Courier New', monospace;
+                  }
+                  .btn {
+                      display: inline-block;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      padding: 12px 24px;
+                      text-decoration: none;
+                      border-radius: 25px;
+                      margin: 10px 10px 10px 0;
+                      font-weight: bold;
+                  }
+                  .btn:hover { transform: translateY(-2px); }
+                  code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🛡️ Email Classification API</h1>
+                  <p><strong>AI-Powered Email Classification using Google's Gemma-3-270m-it Model</strong></p>
+                  
+                  <div class="feature">
+                      <h3>🚀 Live Demo</h3>
+                      <p>Try the email classification system with your own .eml files!</p>
+                      <a href="#" class="btn">🌐 Launch Web Interface</a>
+                      <a href="#" class="btn">📚 API Documentation</a>
+                  </div>
+                  
+                  <h2>📡 API Endpoints</h2>
+                  
+                  <div class="endpoint">
+                      <strong>POST</strong> /classify/upload - Upload and classify single .eml file
+                  </div>
+                  
+                  <div class="endpoint">
+                      <strong>POST</strong> /classify/batch - Batch classification of multiple files
+                  </div>
+                  
+                  <div class="endpoint">
+                      <strong>GET</strong> /health - Service health check
+                  </div>
+                  
+                  <div class="endpoint">
+                      <strong>GET</strong> /stats - Classification statistics
+                  </div>
+                  
+                  <h2>🔧 Quick Start</h2>
+                  
+                  <div class="feature">
+                      <h3>1. Clone Repository</h3>
+                      <code>git clone https://github.com/AmartyaCSB/phishing_pot.git</code>
+                  </div>
+                  
+                  <div class="feature">
+                      <h3>2. Install Dependencies</h3>
+                      <code>pip install -r requirements.txt</code>
+                  </div>
+                  
+                  <div class="feature">
+                      <h3>3. Configure Environment</h3>
+                      <code>cp .env.example .env</code><br>
+                      <small>Add your HuggingFace API key to the .env file</small>
+                  </div>
+                  
+                  <div class="feature">
+                      <h3>4. Start Server</h3>
+                      <code>python start_server.py</code>
+                  </div>
+                  
+                  <h2>🏗️ Architecture</h2>
+                  <ul>
+                      <li><strong>FastAPI</strong> - Modern web framework for APIs</li>
+                      <li><strong>Google Gemma-3-270m-it</strong> - AI model for classification</li>
+                      <li><strong>HuggingFace Transformers</strong> - ML model infrastructure</li>
+                      <li><strong>Docker</strong> - Containerized deployment</li>
+                  </ul>
+                  
+                  <h2>📊 Features</h2>
+                  <div class="feature">
+                      <strong>🤖 AI-Powered Classification</strong><br>
+                      Uses Google's Gemma-3-270m-it model for accurate email classification
+                  </div>
+                  
+                  <div class="feature">
+                      <strong>📧 File Upload Support</strong><br>
+                      Upload .eml files directly through web interface or API
+                  </div>
+                  
+                  <div class="feature">
+                      <strong>📊 Batch Processing</strong><br>
+                      Classify multiple emails simultaneously
+                  </div>
+                  
+                  <div class="feature">
+                      <strong>💾 Smart Caching</strong><br>
+                      Intelligent caching system for improved performance
+                  </div>
+                  
+                  <h2>🔗 Links</h2>
+                  <a href="https://github.com/AmartyaCSB/phishing_pot" class="btn">📂 GitHub Repository</a>
+                  <a href="https://huggingface.co/google/gemma-3-270m-it" class="btn">🤖 Gemma Model</a>
+                  
+                  <hr style="margin: 40px 0;">
+                  <p style="text-align: center; color: #666;">
+                      <strong>⚠️ Disclaimer:</strong> This tool is for educational and research purposes only.
+                  </p>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # Copy README as markdown documentation
+          cp README.md docs/
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

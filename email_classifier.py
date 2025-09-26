@@ -246,14 +246,26 @@ class GemmaEmailClassifier:
     def _build_messages(text: str, labels: List[str]) -> list[dict]:
         label_list = ", ".join(labels)
         system_prompt = (
-            "You are an email security classifier. Given an email's subject and body, "
-            "select exactly one label from the provided options. "
-            "Respond ONLY with a compact JSON object like: {\"label\": \"<one_of_labels>\"}."
+            "You are an expert email security classifier. Analyze the email content carefully and classify it as exactly one of the provided labels. "
+            f"AVAILABLE LABELS: {label_list}\n\n"
+            "CLASSIFICATION GUIDELINES:\n"
+            "- 'phishing': Emails attempting to steal credentials, impersonate legitimate entities, or trick users into malicious actions\n"
+            "- 'spam': Unwanted promotional, marketing, or junk emails\n"
+            "- 'benign': Legitimate, safe emails from trusted sources\n"
+            "- 'unknown': Only use if the email is genuinely ambiguous or corrupted\n\n"
+            "IMPORTANT: You MUST use one of these exact labels. Do not create new labels. "
+            "Respond ONLY with a JSON object like: {\"label\": \"phishing\"}"
         )
         user_prompt = (
-            f"Labels: [{label_list}]\n\n"
-            f"Email:\n{text.strip()}\n\n"
-            "Return JSON only."
+            f"CLASSIFY THIS EMAIL (use one of: {label_list}):\n\n"
+            f"{text.strip()}\n\n"
+            "Analyze for:\n"
+            "- Suspicious URLs or domains\n"
+            "- Urgent/threatening language\n"
+            "- Requests for personal information\n"
+            "- Impersonation attempts\n"
+            "- Spelling/grammar issues\n\n"
+            "Return JSON: {\"label\": \"your_classification\"}"
         )
         return [
             {"role": "system", "content": system_prompt},
@@ -264,17 +276,46 @@ class GemmaEmailClassifier:
     def _parse_choice_label(output_text: str, labels: List[str]) -> Optional[str]:
         # Try to extract JSON {"label": "..."}
         try:
+            # First try to find JSON object
             m = re.search(r"\{.*?\}", output_text, flags=re.DOTALL)
             if m:
                 obj = json.loads(m.group(0))
                 if isinstance(obj, dict) and "label" in obj:
-                    label = str(obj["label"]).strip()
-                    # Normalize to one of provided labels
-                    low_map = {l.lower(): l for l in labels}
-                    return low_map.get(label.lower())
+                    label = str(obj["label"]).strip().lower()
+                    # Exact match with provided labels (case insensitive)
+                    for provided_label in labels:
+                        if label == provided_label.lower():
+                            return provided_label
+                    
+                    # Enhanced fuzzy matching for common variations
+                    if any(word in label for word in ["phish", "fraud", "scam", "malicious", "suspicious", "fake", "deceptive"]):
+                        return "phishing"
+                    elif any(word in label for word in ["spam", "junk", "marketing", "promotional", "advertisement"]):
+                        return "spam"
+                    elif any(word in label for word in ["benign", "legitimate", "safe", "normal", "clean", "good", "valid"]):
+                        return "benign"
+                    elif any(word in label for word in ["unknown", "unclear", "uncertain", "ambiguous"]):
+                        return "unknown"
         except Exception:
             pass
-        return None
+        
+        # Fallback: look for labels directly in the text
+        output_lower = output_text.lower()
+        
+        # Check for exact label matches first
+        for label in labels:
+            if label.lower() in output_lower:
+                return label
+        
+        # Check for keyword patterns if no exact match
+        if any(word in output_lower for word in ["phish", "fraud", "scam", "malicious", "suspicious"]):
+            return "phishing"
+        elif any(word in output_lower for word in ["spam", "junk", "marketing"]):
+            return "spam"
+        elif any(word in output_lower for word in ["benign", "legitimate", "safe", "normal"]):
+            return "benign"
+        
+        return "unknown"  # Default to unknown instead of None
 
     @staticmethod
     def _heuristic_scores(output_text: str, labels: List[str]) -> List[Tuple[str, float]]:
