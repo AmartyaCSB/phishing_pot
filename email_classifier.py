@@ -268,13 +268,30 @@ class GemmaEmailClassifier:
             if m:
                 obj = json.loads(m.group(0))
                 if isinstance(obj, dict) and "label" in obj:
-                    label = str(obj["label"]).strip()
+                    label = str(obj["label"]).strip().lower()
                     # Normalize to one of provided labels
                     low_map = {l.lower(): l for l in labels}
-                    return low_map.get(label.lower())
+                    if label in low_map:
+                        return low_map[label]
         except Exception:
             pass
-        return None
+        
+        # Fallback: look for labels directly in the text
+        output_lower = output_text.lower()
+        for label in labels:
+            if label.lower() in output_lower:
+                return label
+        
+        # Enhanced fallback: look for common variations
+        if any(word in output_lower for word in ["phish", "fraud", "scam", "malicious"]):
+            return "phishing"
+        elif any(word in output_lower for word in ["spam", "junk", "marketing", "promotional"]):
+            return "spam"
+        elif any(word in output_lower for word in ["benign", "legitimate", "safe", "normal", "clean"]):
+            return "benign"
+        
+        # If we still can't determine, return the first label as default
+        return labels[0] if labels else None
 
     @staticmethod
     def _heuristic_scores(output_text: str, labels: List[str]) -> List[Tuple[str, float]]:
